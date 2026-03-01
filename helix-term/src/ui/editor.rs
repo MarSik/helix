@@ -873,12 +873,21 @@ impl EditorView {
         let key_result = self.keymaps.get(mode, event);
         cxt.editor.autoinfo = self.keymaps.sticky().map(|node| node.infobox());
 
+        // Track if we were in view mode before processing this key
+        let was_in_view_mode = cxt.editor.in_view_mode;
+
+        // Update view mode state based on current keymap state
+        cxt.editor.in_view_mode = self.keymaps.is_view_mode();
+
         let mut execute_command = |command: &commands::MappableCommand| {
             command.execute(cxt);
             helix_event::dispatch(PostCommand { command, cx: cxt });
 
             let current_mode = cxt.editor.mode();
             if current_mode != last_mode {
+                // Clear view mode state when switching modes
+                cxt.editor.in_view_mode = false;
+
                 helix_event::dispatch(OnModeSwitch {
                     old_mode: last_mode,
                     new_mode: current_mode,
@@ -908,8 +917,27 @@ impl EditorView {
                     execute_command(command);
                 }
             }
-            KeymapResult::NotFound | KeymapResult::Cancelled(_) => return Some(key_result),
+            KeymapResult::NotFound | KeymapResult::Cancelled(_) => {
+                // On cancelled (e.g., Escape), clear view mode and ensure cursor visible
+                if was_in_view_mode {
+                    cxt.editor.in_view_mode = false;
+                    let view_id = cxt.editor.tree.focus;
+                    cxt.editor.ensure_cursor_in_view(view_id);
+                }
+                return Some(key_result);
+            }
         }
+
+        // Update view mode state after command execution
+        let now_in_view_mode = self.keymaps.is_view_mode();
+        cxt.editor.in_view_mode = now_in_view_mode;
+
+        // If we just exited view mode, ensure cursor is visible
+        if was_in_view_mode && !now_in_view_mode {
+            let view_id = cxt.editor.tree.focus;
+            cxt.editor.ensure_cursor_in_view(view_id);
+        }
+
         None
     }
 
@@ -1478,7 +1506,10 @@ impl Component for EditorView {
                 let mode = cx.editor.mode();
                 let (view, doc) = current!(cx.editor);
 
-                view.ensure_cursor_in_view(doc, config.scrolloff);
+                // Don't reposition view to cursor when in view mode (z/Z)
+                if !cx.editor.in_view_mode {
+                    view.ensure_cursor_in_view(doc, config.scrolloff);
+                }
 
                 // Store a history state if not in insert mode. This also takes care of
                 // committing changes when leaving insert mode.

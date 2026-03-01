@@ -1880,6 +1880,11 @@ pub fn scroll(cx: &mut Context, offset: usize, direction: Direction, sync_cursor
         return;
     }
 
+    // In view mode, don't move cursor at all - just scroll the view
+    if cx.editor.in_view_mode {
+        return;
+    }
+
     let view_offset = doc.view_offset(view.id);
 
     let mut head;

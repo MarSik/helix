@@ -1215,6 +1215,10 @@ pub struct Editor {
     /// confirmed.
     pub last_selection: Option<Selection>,
 
+    /// Whether we're currently in view mode (z/Z). Used to prevent cursor movement
+    /// during scrolling in view mode.
+    pub in_view_mode: bool,
+
     pub status_msg: Option<(Cow<'static, str>, Severity)>,
     pub autoinfo: Option<Info>,
 
@@ -1349,6 +1353,7 @@ impl Editor {
             theme_loader,
             last_theme: None,
             last_selection: None,
+            in_view_mode: false,
             registers: Registers::new(Box::new(arc_swap::access::Map::new(
                 Arc::clone(&config),
                 |config: &Config| &config.clipboard_provider,

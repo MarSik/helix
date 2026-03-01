@@ -293,7 +293,7 @@ pub fn default() -> HashMap<Mode, KeyTrie> {
             "A-c" => toggle_line_comments,
             "?" => command_palette,
         },
-        "z" => { "View"
+        "z" => { "View" view_only=true
             "z" | "c" => align_view_center,
             "t" => align_view_top,
             "b" => align_view_bottom,
@@ -310,7 +310,7 @@ pub fn default() -> HashMap<Mode, KeyTrie> {
             "n" => search_next,
             "N" => search_prev,
         },
-        "Z" => { "View" sticky=true
+        "Z" => { "View" sticky=true view_only=true
             "z" | "c" => align_view_center,
             "t" => align_view_top,
             "b" => align_view_bottom,

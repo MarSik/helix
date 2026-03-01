@@ -25,6 +25,7 @@ pub struct KeyTrieNode {
     map: HashMap<KeyEvent, KeyTrie>,
     order: Vec<KeyEvent>,
     pub is_sticky: bool,
+    pub is_view_only: bool,
 }
 
 impl<'de> Deserialize<'de> for KeyTrieNode {
@@ -49,7 +50,12 @@ impl KeyTrieNode {
             map,
             order,
             is_sticky: false,
+            is_view_only: false,
         }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// Merge another Node in. Leaves and subnodes from the other node replace
@@ -315,6 +321,17 @@ impl Keymaps {
 
     pub fn sticky(&self) -> Option<&KeyTrieNode> {
         self.sticky.as_ref()
+    }
+
+    /// Check if we're currently in view mode (z or Z prefix).
+    pub fn is_view_mode(&self) -> bool {
+        // Sticky view mode (Z)
+        if let Some(ref node) = self.sticky {
+            if node.is_view_only {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn contains_key(&self, mode: Mode, key: KeyEvent) -> bool {
